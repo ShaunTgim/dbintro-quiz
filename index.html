@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>資概（資料庫）練習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: single centered column, control-panel header + one question card at a time, number grid below */
+:root{
+  --bg:#eef0f5; --panel:#ffffff; --ink:#1a1f2e; --muted:#5c6378; --line:#d5d9e4;
+  --accent:#7a4a0c; --accent-soft:#f3e7d6; --ok:#1f7a4a; --ok-soft:#dff1e6; --bad:#b4372b; --bad-soft:#f8e1de; --warn:#a86a00;
+  --display:"Chakra Petch","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12141c; --panel:#1b1e2a; --ink:#e4e6ee; --muted:#9aa0b5; --line:#2e3346;
+  --accent:#e0a95a; --accent-soft:#3a2a14; --ok:#5cc58b; --ok-soft:#173326; --bad:#ef7a6c; --bad-soft:#3a1d1a; --warn:#e2a93b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12141c; --panel:#1b1e2a; --ink:#e4e6ee; --muted:#9aa0b5; --line:#2e3346;
+  --accent:#e0a95a; --accent-soft:#3a2a14; --ok:#5cc58b; --ok-soft:#173326; --bad:#ef7a6c; --bad-soft:#3a1d1a; --warn:#e2a93b; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65}
+.wrap{max-width:780px;margin:0 auto;padding-block:24px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-size:1.75rem;margin:0;text-wrap:balance;letter-spacing:.02em}
+h2{font-size:1.1rem;margin:0}
+.eyebrow{font-family:var(--display);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.muted{color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{font-weight:500;color:var(--muted);font-size:.85rem;white-space:nowrap}
+td.num{white-space:nowrap;font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right}
+.chip{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:99px;font-weight:500}
+.chip.ready{background:var(--ok-soft);color:var(--ok)}
+.chip.wait{background:var(--line);color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,select{font:inherit}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--panel);font-weight:500}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.opt:focus-visible,.cell:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select{padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);max-width:100%}
+label.tog{display:flex;gap:8px;align-items:center;cursor:pointer}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.qhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:var(--display);font-variant-numeric:tabular-nums}
+.qtext{font-size:1.08rem;white-space:pre-line;margin:0}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:11px 14px;border-radius:8px;cursor:pointer;line-height:1.5}
+.opt b{font-family:var(--display);min-width:1.3em;color:var(--muted)}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.sel b{color:var(--accent)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px}
+.cell{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:6px;padding:6px 0;font-family:var(--display);font-variant-numeric:tabular-nums;cursor:pointer;font-size:.9rem}
+.cell.done{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.cell.cur{outline:2px solid var(--accent)}
+.cell.r{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.cell.w{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.score{font-family:var(--display);font-size:3rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.warnbox{border-left:3px solid var(--warn);padding:8px 12px;background:var(--panel);font-size:.92rem}
+.review{display:flex;flex-direction:column;gap:12px}
+.ritem{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
+.ritem .ans{font-size:.92rem}
+.ritem .ans .y{color:var(--bad)} .ritem .ans .c{color:var(--ok);font-weight:500}
+.tag{font-family:var(--display);font-size:.8rem;color:var(--muted)}
+
+.figs{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.fig{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff;padding:6px}
+.ritem .fig{max-height:220px;width:auto}
+#lkNo{width:5.5em;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-variant-numeric:tabular-nums}
+#lkNo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lookup{border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.lookup .opt{cursor:default}
+.lookup .opt:hover{border-color:var(--line)}
+.lookup .opt.right:hover{border-color:var(--ok)}
+.opt span{white-space:pre-line;min-width:0;overflow-wrap:anywhere}
+.opt b{font-family:var(--body);font-weight:500;min-width:auto}
+.opts.letters{flex-direction:row;flex-wrap:wrap}
+.opts.letters .opt{flex:1 1 0;min-width:0;justify-content:center;padding-inline:6px}
+.opts.tf{flex-direction:row}
+.opts.tf .opt{flex:1 1 0;justify-content:center;font-size:1.15rem;padding:12px 6px}
+.opts.tf .opt b{font-size:1.25rem;line-height:1.2}
+.qtext.sm{font-size:1rem}
+tr.tot td{font-weight:700;border-bottom:none}
+.cell.chstart{box-shadow:inset 3px 0 0 var(--accent)}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.9em;line-height:1.2;margin:0 2px}
+.frac>span:first-child{border-bottom:1px solid currentColor;padding:0 3px}
+sub{font-size:.72em}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+*,*::before,*::after{box-sizing:border-box}
+img{max-width:100%}
+.small{font-size:.88rem;margin:0}
+#printMsg.err{color:var(--bad)}
+#printMsg.ok{color:var(--ok)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.ico{display:inline-block;vertical-align:middle;height:auto;max-width:100%;margin:0 2px;background:#fff;border-radius:3px}
+.fig,.ico{cursor:zoom-in}
+#zoom{position:fixed;inset:0;background:rgba(10,12,20,.82);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:10;cursor:zoom-out}
+#zoom img{max-width:100%;max-height:100%;background:#fff;border-radius:6px;padding:8px;image-rendering:auto}
+sup{font-size:.72em}
+.rg{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.scroll{overflow-x:auto;max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:8px}
+.scroll table td,.scroll table th{padding:7px 10px}
+.scroll thead th{position:sticky;top:0;background:var(--panel)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">題庫練習 · 共 163 題</div>
+    <h1>資概（資料庫）練習</h1>
+  </header>
+
+  <section id="home" class="panel">
+    <h2>題庫狀態</h2>
+    <div class="scroll"><table><thead><tr><th>單元</th><th style="text-align:right">題號</th><th style="text-align:right">題數</th><th style="text-align:right">含圖題</th></tr></thead><tbody id="bankRows"></tbody></table></div>
+    <h2 style="margin-top:6px">查看單題</h2>
+    <div class="row">
+      <select id="lkCh" aria-label="單元"></select>
+      <span class="row" style="gap:6px;flex-wrap:nowrap"><label for="lkNo" class="muted">題號</label><input id="lkNo" type="number" min="1" value="1" inputmode="numeric"><span class="muted" id="lkMax"></span></span>
+    </div>
+    <div class="row">
+      <button class="btn" id="lkPrev">上一題</button><button class="btn" id="lkNext">下一題</button>
+      <label class="tog"><input type="checkbox" id="lkAns" checked> 顯示答案</label>
+    </div>
+    <div class="lookup" id="lkBox">
+      <div class="tag" id="lkTag"></div>
+      <p class="qtext" id="lkText"></p>
+      <div class="figs" id="lkFig"></div>
+      <div class="opts" id="lkOpts"></div>
+    </div>
+    <h2 style="margin-top:6px">開始練習</h2>
+    <div class="row">
+      <label for="mode" class="muted">模式</label>
+      <select id="mode">
+        <option value="full" id="modeFull">模擬測驗</option>
+        <option value="ch">單元練習</option>
+        <option value="range">自選範圍</option>
+      </select>
+      <select id="chSel" aria-label="單元" hidden></select>
+      <select id="cnt" aria-label="題數" hidden>
+        <option value="10">10 題</option><option value="20">20 題</option><option value="50">50 題</option><option value="0">全部</option>
+      </select>
+    </div>
+    <div class="rg" id="rgBox" hidden>
+      <select id="rgFrom" aria-label="起始單元"></select><span class="muted">到</span><select id="rgTo" aria-label="結束單元"></select>
+      <select id="rgCnt" aria-label="題數"><option value="20">20 題</option><option value="50" selected>50 題</option><option value="100">100 題</option></select>
+    </div>
+    <label class="tog"><input type="checkbox" id="instant"> 作答後立即顯示正確答案</label>
+    <label class="tog" id="shufWrap"><input type="checkbox" id="shuffleOpts"> 選項順序隨機（答案位置隨機）</label>
+    <div class="row">
+      <button class="btn primary" id="startBtn">開始出題</button>
+      <button class="btn" id="printBtn">印製考卷</button>
+      <select id="paperSel" aria-label="紙張大小"><option value="B4">B4</option><option value="A4">A4</option></select>
+      <select id="fmtSel" aria-label="檔案格式"><option value="pdf">PDF</option><option value="docx">Word</option></select>
+    </div>
+    <p class="muted small" id="printMsg">印製考卷會依上方模式另抽一份新題目，輸出含答案頁的 PDF 或 Word 檔（Word 可再編輯）。</p>
+  </section>
+
+  <section id="quiz" class="panel" hidden>
+    <div class="qhead"><span id="qPos"></span><span id="qCh" class="muted"></span></div>
+    <div class="bar"><i id="prog"></i></div>
+    <p class="qtext" id="qText"></p>
+    <div id="qFig" class="figs"></div>
+    <div class="opts" id="opts"></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><button class="btn" id="prevBtn">上一題</button><button class="btn" id="nextBtn">下一題</button></div>
+      <button class="btn primary" id="submitBtn">交卷</button>
+    </div>
+    <div id="confirmBox" class="warnbox" hidden>
+      <span id="confirmMsg"></span>
+      <div class="row" style="margin-top:8px"><button class="btn primary" id="confirmYes">確定交卷</button><button class="btn" id="confirmNo">繼續作答</button></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="result" class="panel" hidden>
+    <div class="eyebrow">成績</div>
+    <div class="row" style="align-items:flex-end;gap:16px"><span class="score" id="score"></span><span class="muted" id="scoreSub"></span></div>
+    <table><thead><tr><th>單元</th><th style="text-align:right">答對</th><th style="text-align:right">題數</th><th style="text-align:right">正確率</th></tr></thead><tbody id="chRows"></tbody></table>
+    <div class="row">
+      <button class="btn primary" id="retryWrong">重練錯題</button>
+      <button class="btn" id="again">再出一份</button>
+      <button class="btn" id="homeBtn">回首頁</button>
+    </div>
+    <h2>錯題檢討</h2>
+    <div class="review" id="review"></div>
+  </section>
+</div>
+<div id="zoom" hidden><img id="zoomImg" alt="放大圖片"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="exam-pdf.js" charset="utf-8"></script>
+<script>
+const CONFIG = {"exam_name": "資概考卷", "full_exam": {"mode": "even", "total": 50}, "extra_modes": [{"label": "是非 20 題＋選擇 60 題", "per_unit": [20, 60]}], "shuffle_options": {"default": false, "pin_pattern": "^(以上|全部皆|都是|都不是|皆是|皆非)"}};
+const BUNDLE = {"units":[{"name":"一、是非題","from":0,"to":57},{"name":"二、單選題","from":57,"to":163}],"numbering":"unit","questions":[{"s":"資料就是資訊的原始型態。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-1"},{"s":"每位學生小考三科成績總分是資料；並不是資訊。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-2"},{"s":"資料階層的欄位有三種特性：欄位名稱、欄位資料和資料表示法。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-3"},{"s":"資料庫（Database）是一種相關記錄的集合。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-4"},{"s":"資料庫的資料並不會有重複資料。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-5"},{"s":"資料庫只是資料庫系統（Database System）的一部分。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-6"},{"s":"SQL Server資料庫管理系統可以同時管理多個資料庫。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-7"},{"s":"我們在學校圖書館的圖書資料管理系統查詢本書資訊時，並不會使用到資料庫系統。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-8"},{"s":"階層式資料庫模型的父親允許有多個兒子；每一位兒子只能有一位父親。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-9"},{"s":"網路式資料庫模型的資料之間是使用低階指標進行連接，而且允許有迴圈。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-10"},{"s":"關聯式資料庫模型（Relational Database Model）是 1970 年 IBM 研究員 E. F. Codd博士開發的資料庫模型。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-11"},{"s":"系統網路架構是使用多個終端機（Terminal）與一台大型主機連接。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-12"},{"s":"主從架構的電腦扮演的角色，需視其安裝的軟體而定，同一台電腦只能是客戶端，或伺服端。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-13"},{"s":"中介軟體可以建立橋樑，讓開發的資料庫應用程式，同時支援多種資料庫管理系統。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-14"},{"s":"SQL Server 和 Access 都是一種關聯式資料庫。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-15"},{"s":"資料表的主鍵（Primary Key）並不是用來識別資料表唯一記錄的欄位資料。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-16"},{"s":"關聯式資料庫的資料表存取操作有：插入、更新、刪除和選擇操作。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-17"},{"s":"關聯式資料庫設計就是在進行資料庫的規劃設計，以便了解資料庫有哪些資料表；每一個資料表有哪些欄位。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-18"},{"s":"系統分析的目的是為了達成使用者所需的各項功能，需求分析的目的是分析資料庫需要儲存哪些資料。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-19"},{"s":"關聯式資料庫設計的第一步是收集資料庫需要儲存的欄位資料。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-20"},{"s":"主鍵是識別資料表唯一記錄的欄位資料，我們可以選擇資料表中一到多個欄位集合建立成主鍵。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-21"},{"s":"正規化分析（Normalization）是一種資料表的分割原則，可以將單一的大型資料表分割成相關聯的多個獨立的小資料表。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-22"},{"s":"大部分的資料庫只需執行前四階正規化形式的正規化分析。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-23"},{"s":"真實世界的結婚關係，丈夫與妻子是實體，在之間擁有結婚的關聯性。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-24"},{"s":"實體並不是一個存在的東西，而只是一個概念。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-25"},{"s":"在實體關聯模型的關聯性可以連接一、二個或以上有關係的實體。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-26"},{"s":"在學校的【學生】選修【課程】是一種一對多關聯性。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-27"},{"s":"正規化分析的各階段是順序步驟，當執行下一階段的正規化之前，一定需要符合前一階段的正規化。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-28"},{"s":"使用正規化分析執行 2NF的資料表，其主鍵的條件是複合鍵。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-29"},{"s":"完整資料庫操作環境包含使用資料庫系統的使用者和實際安裝的硬體環境。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-30"},{"s":"資料庫管理師會依據系統分析師定義的規格來建立終端使用者的資料庫應用程式。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-31"},{"s":"資料庫的主要目的就是儲存資料，除了資料檔外，資料庫本身還儲存一些資料庫管理系統管理資料庫所需的相關資料。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-32"},{"s":"系統目錄是當資料庫發生異常時，資料庫管理師可以用來還原資料庫。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-33"},{"s":"Access不只是資料庫，也是一種應用程式開發工具。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-34"},{"s":"學校的教務系統就是一種資料庫應用程式。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-35"},{"s":"程式設計師使用應用程式開發工具設計資料庫和建立資料庫應用程式。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-36"},{"s":"目前大部分資料庫管理系統都不是關聯式資料庫管理系統。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-37"},{"s":"SQL Server是甲骨文公司開發的資料庫產品，一套強力支援 C#語言的資料庫產品。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-38"},{"s":"MySQL 和 PostgreSQL 都是免費授權的資料庫管理系統。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-39"},{"s":"交易是數個資料庫操作需要一併執行，我們需要將之視為是一個無法分割的單位。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-40"},{"s":"資料庫管理師負責資料庫系統的維護和管理，扮演廠商和使用者之間的協調與溝通角色。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-41"},{"s":"資料庫管理師負責協助資料庫設計師修改資料庫設計，和在資料庫管理系統建立資料庫。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-42"},{"s":"資料庫管理師負責依據各部門的需求，提供不同資料的權限管理。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-43"},{"s":"資料庫管理師並不負責公司資料庫管理系統和更新套件的安裝。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-44"},{"s":"資料庫管理師並不負責預估未來可能的資料成長量，選擇適當的儲存裝置和更改資料結構，以滿足資料成長的需求。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-45"},{"s":"我們可以在同一台或多台電腦安裝 SQL Server，或在同一台電腦安裝多個 SQL Server執行個體（Instance）。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-46"},{"s":"主從架構一定有二台電腦，一台是伺服端（Server）；另一台是客戶端（Client）。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-47"},{"s":"如果將 SQL Server和相關工具都安裝在同一台電腦，其邏輯架構就不是主從架構。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-48"},{"s":"在 SQL Server和客戶端工具是使用 TDS進行應用程式之間的資料交換。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-49"},{"s":"安裝 SQL Server預設執行個體時，需要替執行個體命名。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-50"},{"s":"在 Windows電腦安裝的 SQL Server 不是預設或不具名執行個體，就是具名執行個體。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-51"},{"s":"SQL Server開發人員版是入門級的免費資料庫伺服器。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-52"},{"s":"SQL Server 從 2016 版開始已經不再支援 32 位元 x86 CPU。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-53"},{"s":"SQL Server 2019 針對不同等級的資料庫環境分成多種版本。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-54"},{"s":"SQL Server 2019 版的硬碟空間需要至少 6 GB 的可用硬碟空間，建議安裝在 NTFS 檔案系統。","o":[],"a":"O","f":[],"io":0,"n":2,"tf":1,"r":"1-55"},{"s":"本書是在 Windows 7安裝 SQL Server 2019 Express 版。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-56"},{"s":"SQL Server 2019管理工具 SQL Server Management Studio 並不需要獨立安裝。","o":[],"a":"X","f":[],"io":0,"n":2,"tf":1,"r":"1-57"},{"s":"請問下列哪一項操作並不是一種資料處理的操作？","o":["搜尋","排序","資訊","計算"],"a":"C","f":[],"io":0,"n":4,"r":"2-1"},{"s":"請問資料階層一共可以分為幾層？","o":["5","6","7","8"],"a":"B","f":[],"io":0,"n":4,"r":"2-2"},{"s":"志明是使用 Excel 管理班上同學的通訊資料，每一筆資料包含同學的姓名、電子郵件地址和電話，如圖 1-6-1 所示：\n請以上述 Excel 工作表為例，回答下列問題。\n圖 1-6-1 同學通訊資料\n\n請問 Excel 工作表「A」這一行是下列哪一種資料階層？","o":["位元組","欄位","記錄","檔案"],"a":"B","f":[["q2-3_1.webp",[248.4,93.2]]],"io":0,"n":4,"r":"2-3"},{"s":"志明是使用 Excel 管理班上同學的通訊資料，每一筆資料包含同學的姓名、電子郵件地址和電話，如圖 1-6-1 所示：\n請以上述 Excel 工作表為例，回答下列問題。\n圖 1-6-1 同學通訊資料\n\n請問 Excel 工作表「3」這一列是下列哪一種資料階層？","o":["位元組","欄位","記錄","檔案"],"a":"C","f":[["q2-4_1.webp",[248.4,93.2]]],"io":0,"n":4,"r":"2-4"},{"s":"志明是使用 Excel 管理班上同學的通訊資料，每一筆資料包含同學的姓名、電子郵件地址和電話，如圖 1-6-1 所示：\n請以上述 Excel 工作表為例，回答下列問題。\n圖 1-6-1 同學通訊資料\n\n志明是使用 Excel 儲存通訊資料，請問這種資料結構最接近下列哪一種資料庫模型？","o":["大型檔案","階層式","網路式","關聯式"],"a":"D","f":[["q2-5_1.webp",[248.4,93.2]]],"io":0,"n":4,"r":"2-5"},{"s":"請問下列哪一個不是使用資料庫方式管理資料可以解決的問題？","o":["資料重複","資料不一致","輸入新記錄","擴展新應用"],"a":"C","f":[],"io":0,"n":4,"r":"2-6"},{"s":"請問下列哪一種資料庫模型是使用父子關係來建立連接？","o":["網路式","物件導向式","關聯式","階層式"],"a":"D","f":[],"io":0,"n":4,"r":"2-7"},{"s":"春嬌了解資料庫模型都會實作資料之間的關係，請問下列哪一種資料庫模型並不是使用低階指標來建立資料之間的連接？","o":["大型檔案","階層式","網路式","關聯式"],"a":"D","f":[],"io":0,"n":4,"r":"2-8"},{"s":"同學美麗這學期是班長，常常需要使用瀏覽器瀏覽學校網站，如果將瀏覽 器視為資料庫應用程式；Web網站是資料庫管理系統，請問下列哪一個關於資料庫系統架構的說明是不正確的？","o":["使用主從架構","Web 網站是請求者角色","瀏覽器是客戶端","Web 網站是伺服端"],"a":"B","f":[],"io":0,"n":4,"r":"2-9"},{"s":"請問下列哪一種中介軟體並不是微軟主導的中介軟體？","o":["JDBC","OLE DB","ODBC","以上皆是"],"a":"A","f":[],"io":0,"n":4,"r":"2-10"},{"s":"請問將原始資料經過有系統處理後，就會產生預期的結果，原始資料在處理後稱為：","o":["資料庫","資料","資訊","檔案"],"a":"C","f":[],"io":0,"n":4,"r":"2-11"},{"s":"老師需要評斷班上某科的教學成果時，請問下列那一項是對老師最有幫助的成績？","o":["班長成績","原始成績","坐在第一排的成績","平均成績"],"a":"D","f":[],"io":0,"n":4,"r":"2-12"},{"s":"請問將「資料」轉換成「資訊」必須經過一連串處理過程，這一連串的處理過程，稱為：","o":["流程圖","資料處理","資料結構","訊號整合"],"a":"B","f":[],"io":0,"n":4,"r":"2-13"},{"s":"請問英文字母 A是屬於下列哪一種資料階層？","o":["位元組","欄位","記錄","檔案"],"a":"A","f":[],"io":0,"n":4,"r":"2-14"},{"s":"請問學生姓名是屬於下列哪一種資料階層？","o":["位元組","欄位","記錄","檔案"],"a":"B","f":[],"io":0,"n":4,"r":"2-15"},{"s":"請問儲存整班的學生記錄是屬於下列哪一種資料階層？","o":["位元組","欄位","記錄","檔案"],"a":"D","f":[],"io":0,"n":4,"r":"2-16"},{"s":"請問下列哪一個我們常用的資訊系統會使用到資料庫？","o":["火車訂票系統","ATM自動提款機","圖書借閱管理系統","以上皆是"],"a":"D","f":[],"io":0,"n":4,"r":"2-17"},{"s":"請問資料庫可以解決下列哪一種問題？","o":["資料重複問題","資料不一致問題","擴展新應用的問題","以上皆可"],"a":"D","f":[],"io":0,"n":4,"r":"2-18"},{"s":"請問使用資料庫方式管理資料可以達到：","o":["多人使用，資料共享","資料一致和資料不重複","更容易導入新系統的全新應用","以上皆可"],"a":"D","f":[],"io":0,"n":4,"r":"2-19"},{"s":"請問下列哪一個關於資料庫的說明是不正確的？","o":["資料庫是一種資料儲存單位","在生活之中並不常用資料庫","資料庫是一些經過組織的資料集合","資料庫可以集中且更有效率的管理和處理資料"],"a":"B","f":[],"io":0,"n":4,"r":"2-20"},{"s":"請問下列哪一個關於資料庫應用的說明是不正確的？","o":["資料庫應用程式本身並不會直接管理資料庫","資料庫可以新增、更新和刪除記錄","國內的戶政系統並不是資料庫應用","航空公司的訂票系統是資料庫應用"],"a":"C","f":[],"io":0,"n":4,"r":"2-21"},{"s":"請問下列哪一種資料庫模型是使用樹狀結構來組織資料和建立記錄之間的關係？","o":["階層式資料庫模型","網路式資料庫模型","關聯式資料庫模型","以上皆非"],"a":"A","f":[],"io":0,"n":4,"r":"2-22"},{"s":"請問下列哪一種資料庫模型是將資料組織成網路形狀的圖形結構？","o":["階層式資料庫模型","網路式資料庫模型","關聯式資料庫模型","以上皆非"],"a":"B","f":[],"io":0,"n":4,"r":"2-23"},{"s":"請問下列哪一種資料庫模型是使用類似 Excel工作表來儲存資料？","o":["階層式資料庫模型","網路式資料庫模型","關聯式資料庫模型","以上皆非"],"a":"C","f":[],"io":0,"n":4,"r":"2-24"},{"s":"如果有一個資料庫是使用二維表格儲存記錄資料，請問它是下列哪一種資料庫模型的資料庫？","o":["階層式資料庫模型","網路式資料庫模型","關聯式資料庫模型","以上皆非"],"a":"C","f":[],"io":0,"n":4,"r":"2-25"},{"s":"請問下列哪一個關於關聯式資料庫模型的說明是不正確的？","o":["關聯式資料庫模型是一個儲存記錄資料的二維表格","關聯式資料庫模型建立關聯性是使用欄位值","其理論基礎是數學的集合論（Set Theory）","關聯式資料庫模型仍然會使用低階指標來連接資料"],"a":"D","f":[],"io":0,"n":4,"r":"2-26"},{"s":"請問下列哪一種是目前資料庫系統架構的主流？","o":["主從架構","系統網路架構","個人電腦架構","以上皆非"],"a":"A","f":[],"io":0,"n":4,"r":"2-27"},{"s":"請問下列哪一個關於主從架構的說明是不正確的？","o":["早期大型主機時代已經使用主從架構","資料庫系統的工作是分散在客戶端和伺服端電腦執行","伺服端扮演提供服務的提供者角色","客戶端是提出服務請求的請求者角色"],"a":"A","f":[],"io":0,"n":4,"r":"2-28"},{"s":"請問下列哪一種軟體是整合不同應用程式作為之間橋樑的軟體？","o":["作業系統","網路軟體","中介軟體","資料庫系統"],"a":"C","f":[],"io":0,"n":4,"r":"2-29"},{"s":"請問下列哪一種是昇陽公司開發的中介軟體？","o":["JDBC","OLE DB","ODBC","以上皆是"],"a":"A","f":[],"io":0,"n":4,"r":"2-30"},{"s":"請問下列哪一個微軟公司提供的進階中介軟體，除了存取關聯式資料庫之外，還能存取非關聯式資料的資料來源？","o":["JDBC","OLE DB","ODBC","以上皆是"],"a":"B","f":[],"io":0,"n":4,"r":"2-31"},{"s":"圖 2-5-1\n美麗本來是使用 Excel 管理文具店的產品資料，如圖 2-5-1 所示：\n美麗準備將上述 Excel 工作表轉換成資料表，請依序回答下列問題？\n\n請問轉換的產品資料表擁有幾個欄位？","o":["4","5","6","7"],"a":"C","f":[["q2-32_1.webp",[323.6,89.6]]],"io":0,"n":4,"r":"2-32"},{"s":"圖 2-5-1\n美麗本來是使用 Excel 管理文具店的產品資料，如圖 2-5-1 所示：\n美麗準備將上述 Excel 工作表轉換成資料表，請依序回答下列問題？\n\n請問轉換的產品資料表可以選擇下列哪一個欄位作為主鍵？","o":["產品編號","產品名稱","產品描述","定價"],"a":"A","f":[["q2-33_1.webp",[323.6,89.6]]],"io":0,"n":4,"r":"2-33"},{"s":"如果一間供應商供應多項商品，每一項商品都只能由一間供應商來供應，請問供應商和商品之間是下列哪一種關聯性？","o":["一對多","多對多","一對一","全部皆非"],"a":"A","f":[],"io":0,"n":4,"r":"2-34"},{"s":"志鴻老師這學期上 3 門課程，請問老師和課程之間是下列哪一種關聯性？","o":["一對多","多對多","一對一","全部皆非"],"a":"A","f":[],"io":0,"n":4,"r":"2-35"},{"s":"志明老師這學期新開了一門課程，我們需要在【課程】資料表新增這門課程的記錄，請問這是下列哪一種關聯式資料庫操作？","o":["插入操作","更新操作","刪除操作","選擇操作"],"a":"A","f":[],"io":0,"n":4,"r":"2-36"},{"s":"阿忠在進行資料庫設計時，依據描述分析出【員工】實體，請問實體關聯模型是使用下列哪一種符號代表實體？","o":["圓角長方形","橢圓形","菱形","長方形"],"a":"D","f":[],"io":0,"n":4,"r":"2-37"},{"s":"阿忠準備學習更新公司的資料庫設計，在閱讀資料庫的實體關聯模型時， 發現在模型中有好多菱形符號，請問這些菱形符號代表什麼？","o":["實體","關聯性","屬性","條件"],"a":"B","f":[],"io":0,"n":4,"r":"2-38"},{"s":"一般來說，大部分資料庫的正規化過程，只需要下列幾個階段即可完成資料庫設計？","o":["1","2","3","4"],"a":"C","f":[],"io":0,"n":4,"r":"2-39"},{"s":"同學小明已經將客戶資料表的欄位都改成單一值，請問這是執行下列哪一階正規化？","o":["1NF","2NF","3NF","4NF"],"a":"A","f":[],"io":0,"n":4,"r":"2-40"},{"s":"請問下列哪一階資料庫正規化是在刪除遞移相依？","o":["1NF","2NF","3NF","4NF"],"a":"C","f":[],"io":0,"n":4,"r":"2-41"},{"s":"請問關聯式資料庫可以有幾個資料表？","o":["1個","2個","3個","以上皆可"],"a":"D","f":[],"io":0,"n":4,"r":"2-42"},{"s":"請問下列哪一個不是 Excel工作表轉換成資料表的注意事項？","o":["資料表擁有多少個欄位才能儲存完整的二維表格","Excel工作表需要轉換成多少個資料表","每一個欄位使用哪一種資料類型儲存最適合","每一個欄位大小是否足以儲存所需資料，包含現在和未來的需求"],"a":"B","f":[],"io":0,"n":4,"r":"2-43"},{"s":"請問學生資料的學號、姓名、生日和地址，哪一個欄位可以作為主鍵？","o":["學號","姓名","生日","地址"],"a":"A","f":[],"io":0,"n":4,"r":"2-44"},{"s":"請問下列哪一種關聯式資料庫的操作是在新增一筆記錄？","o":["插入","更新","刪除","選擇"],"a":"A","f":[],"io":0,"n":4,"r":"2-45"},{"s":"請問下列哪一種關聯式資料庫的操作是在選取資料表中特定範圍的資料？","o":["插入","更新","刪除","選擇"],"a":"D","f":[],"io":0,"n":4,"r":"2-46"},{"s":"請問下列哪一種不是使用者提出系統需求時，我們需要搜集的資訊？","o":["資料的分類","資料的詳細資訊","資料的儲存方式","使用者的作業流程"],"a":"D","f":[],"io":0,"n":4,"r":"2-47"},{"s":"請問下列哪一個關於需求分析的說明是不正確的？","o":["目的是為了達成使用者所需的各項功能","管理功能需求是收集符合使用者的資料分類","使用者操作需求是建立查詢和報表","應用程式使用者介面是替資料表建立操作介面"],"a":"B","f":[],"io":0,"n":4,"r":"2-48"},{"s":"請問下列哪一個並不是選擇資料表主鍵的原則？","o":["欄位值需要唯一","可以沒有值","永遠不會改變","簡短且簡單值"],"a":"B","f":[],"io":0,"n":4,"r":"2-49"},{"s":"請問下列哪一種正規化型式是在處理欄位本身的內容？","o":["1NF","2NF","3NF","4NF"],"a":"A","f":[],"io":0,"n":4,"r":"2-50"},{"s":"請問下列哪一種正規化型式是在處理欄位不能是間接相依主鍵，一定是直接相依主鍵？","o":["1NF","2NF","3NF","4NF"],"a":"C","f":[],"io":0,"n":4,"r":"2-51"},{"s":"請問下列哪一個關於實體關聯模型的描述是不正確的？","o":["在 1976年 Peter Chen所開發","使用實體與關聯性來描述資料和資料之間的關係","目前資料庫系統分析和設計最常使用的方法","實體關聯圖並不是使用圖形符號表示的實體關聯模型"],"a":"D","f":[],"io":0,"n":4,"r":"2-52"},{"s":"請問學生只允許擔任班上一種幹部是下列哪一種關聯性？","o":["一對一","一對多","多對多","以上皆非"],"a":"A","f":[],"io":0,"n":4,"r":"2-53"},{"s":"請問一門課程使用一至多本教課書是下列哪一種關聯性？","o":["一對一","一對多","多對多","以上皆非"],"a":"B","f":[],"io":0,"n":4,"r":"2-54"},{"s":"請問實體關聯模型是使用下列哪一種圖形來描述屬性？","o":["圓角長方形","橢圓形","菱形","長方形"],"a":"B","f":[],"io":0,"n":4,"r":"2-55"},{"s":"請問下列哪一階正規化形式是在刪除部分相依？","o":["1NF","2NF","3NF","4NF"],"a":"B","f":[],"io":0,"n":4,"r":"2-56"},{"s":"阿忠是公司資料庫環境的終端使用者，在實際操作時發現使用介面需要新增一個功能，請問他需要和下列哪一位使用者討論此功能？","o":["資料庫設計師","資料庫管理師","系統分析師","軟體工程師"],"a":"C","f":[],"io":0,"n":4,"r":"2-57"},{"s":"美麗是公司資料庫環境的終端使用者，今天上班操作使用介面時，發現存取資料有些卡卡不順利，請問他需要告知哪一位使用者來解決此問題？","o":["資料庫設計師","資料庫管理師","系統分析","軟體工程師"],"a":"B","f":[],"io":0,"n":4,"r":"2-58"},{"s":"志明是公司的資料庫管理師，負責管理公司的進銷存資料庫系統，和維持資料庫系統的正常運作，請以上述描述，回答下列問題？\n公司發現資料庫有離職員工非法存取商業機密資料，請問志明可以分析下列哪一種資料來抓出非法存取資料的使用者？","o":["系統目錄","索引資料","交易記錄","備份檔"],"a":"C","f":[],"io":0,"n":4,"r":"2-59"},{"s":"志明是公司的資料庫管理師，負責管理公司的進銷存資料庫系統，和維持資料庫系統的正常運作，請以上述描述，回答下列問題？\n公司因為今年代理了一項新產品，客戶資料大幅成長，業務常常抱怨使用客戶名稱查詢資料時，速度太慢，請問志明可以新增下列哪一種資料來加速資料搜尋？","o":["系統目錄","索引資料","交易記錄","備份檔"],"a":"B","f":[],"io":0,"n":4,"r":"2-60"},{"s":"志明是公司的資料庫管理師，負責管理公司的進銷存資料庫系統，和維持資料庫系統的正常運作，請以上述描述，回答下列問題？\n公司今天上班因為跳電，再加上不斷電系統剛好正在維護，造成資料庫系統異常，請問志明可以使用下列哪一種資料來快速回復資料庫系統的運作？","o":["系統目錄","索引資料","交易記錄","備份檔"],"a":"D","f":[],"io":0,"n":4,"r":"2-61"},{"s":"志明最近準備學習資料庫系統，因為窮學生沒有錢購買正式版軟體，而且電腦也沒有安裝 Office，請問志明可以選擇安裝下列哪一種資料庫管理系統？","o":["DB2","Oracle","Access","MySQL"],"a":"D","f":[],"io":0,"n":4,"r":"2-62"},{"s":"請問在資料庫管理系統的下列哪一模組是負責處理使用者下達的 SQL 指令敘述？","o":["儲存管理","查詢處理模組","交易管理","回復管理"],"a":"B","f":[],"io":0,"n":4,"r":"2-63"},{"s":"小明需要執行一序列的多個資料庫操作來更新系統，這些操作必須視為同一個執行單位，不是全部不執行；就需全部執行，請問資料庫管理系統是使用下列哪一模組來執行一序列的資料庫操作？","o":["儲存管理","查詢處理模組","交易管理","回復管理"],"a":"C","f":[],"io":0,"n":4,"r":"2-64"},{"s":"資料庫管理師在角色上是扮演協調與溝通角色，請問下列哪一個是資料庫管理師需要協調與溝通的對象？","o":["軟體與硬體廠商","使用者","開發者","以上皆是"],"a":"D","f":[],"io":0,"n":4,"r":"2-65"},{"s":"請問下列哪一項並不是資料庫管理師所負責的工作？","o":["建立資料庫","設定資料權限","監控資料庫系統","寫程式開發應用程式"],"a":"D","f":[],"io":0,"n":4,"r":"2-66"},{"s":"請問下列哪一個資料庫環境的使用者是實際操作資料庫系統的使用者？","o":["終端使用者","資料庫設計師","資料庫管理師","系統分析師"],"a":"A","f":[],"io":0,"n":4,"r":"2-67"},{"s":"請問下列哪一個資料庫環境的使用者是負責實際執行資料庫設計來建立公司或組織的資料庫結構？","o":["終端使用者","資料庫設計師","資料庫管理師","系統分析師"],"a":"B","f":[],"io":0,"n":4,"r":"2-68"},{"s":"請問下列哪一個資料庫環境的使用者是負責依據終端使用者的需求來製定資料庫應用程式的規格與功能？","o":["終端使用者","資料庫設計師","資料庫管理師","系統分析師"],"a":"D","f":[],"io":0,"n":4,"r":"2-69"},{"s":"請問下列哪一個是資料庫管理系統維護和維持資料庫正常運作的資料？","o":["系統目錄","索引資料","交易記錄","備份檔"],"a":"A","f":[],"io":0,"n":4,"r":"2-70"},{"s":"如果想知道在什麼時間點下達哪些指令或執行什麼操作，請問我可以使用下列哪一種資料？","o":["系統目錄","索引資料","交易記錄","備份檔"],"a":"C","f":[],"io":0,"n":4,"r":"2-71"},{"s":"請問下列哪一種軟體是用來幫助我們開發資料庫應用程式？","o":["資料庫管理系統","資料庫應用程式","應用程式開發工具","資料庫"],"a":"C","f":[],"io":0,"n":4,"r":"2-72"},{"s":"請問 SQL Server是屬於下列哪一種資料庫環境的軟體？","o":["資料庫管理系統","資料庫應用程式","應用程式開發工具","資料庫"],"a":"A","f":[],"io":0,"n":4,"r":"2-73"},{"s":"請問 Visual Studio是屬於下列哪一種資料庫環境的軟體？","o":["資料庫管理系統","資料庫應用程式","應用程式開發工具","資料庫"],"a":"C","f":[],"io":0,"n":4,"r":"2-74"},{"s":"請問下列哪一個關於關聯式資料庫管理系統的描述是不正確的？","o":["資料庫管理系統是位在作業系統和應用程式開發工具之間","任何資料庫操作都是透過資料庫管理系統來處理","關聯式資料庫管理系統是用來管理關聯式資料庫","關聯式資料庫管理系統不是使用 SQL結構化查詢語言"],"a":"D","f":[],"io":0,"n":4,"r":"2-75"},{"s":"請問下列哪一種是免費的資料庫管理系統？","o":["SQL Server","Oracle","Access","MySQL"],"a":"D","f":[],"io":0,"n":4,"r":"2-76"},{"s":"請問下列哪一種是微軟針對企業級市場開發的資料庫管理系統？","o":["SQL Server","Oracle","Access","MySQL"],"a":"A","f":[],"io":0,"n":4,"r":"2-77"},{"s":"請問資料庫管理系統是使用下列哪一個模組來將資料存入儲存裝置的資料庫，或從資料庫讀取資料？","o":["儲存管理","查詢處理","交易管理","回復管理"],"a":"A","f":[],"io":0,"n":4,"r":"2-78"},{"s":"請問資料庫管理系統是使用下列哪一個模組來執行回復處理來回復資料庫系統至發生異常前的狀態？","o":["儲存管理","查詢處理","交易管理","回復管理"],"a":"D","f":[],"io":0,"n":4,"r":"2-79"},{"s":"請問資料庫管理系統是使用下列哪一個模組來執行銀行轉帳，可以將指定金額轉入指定的帳戶？","o":["儲存管理","查詢處理","交易管理","回復管理"],"a":"C","f":[],"io":0,"n":4,"r":"2-80"},{"s":"請問資料庫管理系統的查詢模組可以執行下列哪一種語言來建立資料庫和資料表？","o":["資料定義語言","資料操作語言","資料控制語言","以上皆是"],"a":"A","f":[],"io":0,"n":4,"r":"2-81"},{"s":"請問資料庫管理系統的查詢模組可以執行下列哪一種語言來建立資料庫安全設定和權限管理？","o":["資料定義語言","資料操作語言","資料控制語言","以上皆是"],"a":"C","f":[],"io":0,"n":4,"r":"2-82"},{"s":"請問下列哪一個關於資料庫管理師的描述是不正確的？","o":["負責維護資料庫系統的正常運作","資料庫管理師是一個人，也只能有一個人","在角色上是扮演廠商和使用者之間的協調與溝通角色","負責資料庫系統的維護和管理"],"a":"B","f":[],"io":0,"n":4,"r":"2-83"},{"s":"請問資料庫管理師需要與下列哪一個溝通軟體升級或硬體擴充？","o":["軟體與硬體廠商","管理者","開發者","使用者"],"a":"A","f":[],"io":0,"n":4,"r":"2-84"},{"s":"請問資料庫管理師需要與下列哪一個研究系統功能的擴充、解決系統問題，和執行整個公司的資料管理？","o":["軟體與硬體廠商","管理者","開發者","使用者"],"a":"C","f":[],"io":0,"n":4,"r":"2-85"},{"s":"請問下列哪一個資料庫管理師負責的工作就是資料庫系統的線上警察？","o":["訂定容量計劃和選擇儲存裝置","監控和調整資料庫系統的效能","使用者的稽核追蹤","備份與回復"],"a":"C","f":[],"io":0,"n":4,"r":"2-86"},{"s":"請問下列哪一個資料庫管理師負責的工作是最佳化資料庫的使用？","o":["訂定容量計劃和選擇儲存裝置","監控和調整資料庫系統的效能","使用者的稽核追蹤","備份與回復"],"a":"B","f":[],"io":0,"n":4,"r":"2-87"},{"s":"請問在同一台電腦可以安裝幾個 SQL Server 執行個體？","o":["1","2","3","很多個"],"a":"D","f":[],"io":0,"n":4,"r":"2-88"},{"s":"請問在同一台電腦可以安裝幾個 SQL Server 預設執行個體？","o":["1","2","3","很多個"],"a":"A","f":[],"io":0,"n":4,"r":"2-89"},{"s":"請問在同一台電腦可以安裝幾個 SQL Server 具名執行個體？","o":["1","2","3","很多個"],"a":"D","f":[],"io":0,"n":4,"r":"2-90"},{"s":"志明任職一間軟體公司，請問他可以安裝下列的哪一個版本的 SQL Server 來建立各種使用 SQL Server 資料庫的應用程式？","o":["企業版","標準版","Express 版","開發人員版"],"a":"D","f":[],"io":0,"n":4,"r":"2-91"},{"s":"小明準備使用 SQL Server 學習 SQL 語言的基本使用，但是沒有預算購買 SQL Server，請問他可以安裝下列哪一個版本的 SQL Server 來進行學習？","o":["企業版","標準版","Express 版","Web 版"],"a":"C","f":[],"io":0,"n":4,"r":"2-92"},{"s":"請問下列哪一個關於 SQL Server 資料庫系統處理架構的說明是不正確的？","o":["企業級的資料庫管理系統","支援分散式資料庫系統處理架構","TDS 是 SQL Server 專屬的通訊協定","SQL Server 並不是使用主從架構"],"a":"D","f":[],"io":0,"n":4,"r":"2-93"},{"s":"同學阿忠準備在 Windows 電腦安裝 SQL Server Express，所以列出電腦的硬體配備，請幫忙指出下列哪一項並不符合需求？","o":["CPU 是 2.0GHz","記憶體有 2GB","硬碟空間有 5GB","螢幕是 Super-VGA"],"a":"C","f":[],"io":0,"n":4,"r":"2-94"},{"s":"同學小美準備在 Windows 電腦安裝 SQL Server Express，所以列出電腦的軟體配備，請幫忙指出下列哪一項並不符合需求？","o":["Windows 10 作業系統 32 位元版",".NET Framework 4.6.2 版","SQL Server Native Client","SQL Server 安裝程式支援檔案"],"a":"A","f":[],"io":0,"n":4,"r":"2-95"},{"s":"請問下列哪一個關於 SQL Server 資料庫管理系統的描述是不正確的？","o":["SQL Server是微軟公司的資料庫產品","SQL Server是一種關聯式資料庫管理系統","SQL Server和 Access是同等級的資料庫管理系統","SQL Server支援主從架構的處理架構"],"a":"C","f":[],"io":0,"n":4,"r":"2-96"},{"s":"請問下列哪一個關於 SQL Server 資料庫系統處理架構的說明是不正確的？","o":["SQL Server是主從架構的伺服端","SQL Server和客戶端是使用 TDS進行資料交換","客戶端和伺服端一定置於同一台電腦","關聯式資料庫伺服器就是 SQL Server伺服端"],"a":"C","f":[],"io":0,"n":4,"r":"2-97"},{"s":"小明已經在 Windows電腦安裝了一個預設執行個體，請問他還可以安裝幾個預設執行個體？","o":["0","1","2","很多個"],"a":"A","f":[],"io":0,"n":4,"r":"2-98"},{"s":"小明已經在 Windows電腦安裝了一個預設執行個體，請問他還可以安裝幾個具名執行個體？","o":["0","1","2","很多個"],"a":"D","f":[],"io":0,"n":4,"r":"2-99"},{"s":"我們已經在 Windows 電腦安裝名為【SQLEXPRESS】的 SQL Server Express 版，如果電腦名稱是 Desktop，客戶端工具連接執行個體的完整名稱是下列哪一個？","o":["「\\ SQLEXPRESS」","「Desktop\\SQLEXPRESS」","「SQLEXPRESS\\Desktop」","「Desktop」"],"a":"B","f":[],"io":0,"n":4,"r":"2-100"},{"s":"阿忠的公司是一家跨國集團，在全世界的多國都有分公司，請問這位資料庫管理師應該選擇安裝下列哪一個版本的 SQL Server？","o":["企業版","標準版","開發人員版","Web版"],"a":"A","f":[],"io":0,"n":4,"r":"2-101"},{"s":"小明的家族企業是一間中小企業，請問資料庫管理師應該選擇安裝下列哪一個版本的 SQL Server？","o":["企業版","標準版","開發人員版","Web版"],"a":"B","f":[],"io":0,"n":4,"r":"2-102"},{"s":"志明準備替公司的 Windows Server作業系統建立 Web環境，請問他應該選擇安裝下列哪一個版本的 SQL Server？","o":["企業版","標準版","開發人員版","Web版"],"a":"D","f":[],"io":0,"n":4,"r":"2-103"},{"s":"請問下列哪一個關於 SQL Server 2019 版的硬體需求是不正確的？","o":["64 位元處理器，速度至少 1.4GHz","最少 1GB，建議最少 4GB 以上","Express 版最少 256MB，建議 512GB 以上","Super-VGA(800x600) 以上解析度"],"a":"C","f":[],"io":0,"n":4,"r":"2-104"},{"s":"請問下列哪一個關於 SQL Server 2019 版的軟體需求是不正確的？","o":["Windows 10 TH1 1507 或更新版本","Windows Server 2019 或更新版本",".NET Framework 4.6.2 版","SQL Server Native Client 和相關支援檔案"],"a":"B","f":[],"io":0,"n":4,"r":"2-105"},{"s":"請問下列哪一個不是 SQL Server 安裝程式預設就會安裝的軟體元件？","o":[".NET Framework 4.6.2 版","SQL Server Native Client","Access 2016","SQL Server 安裝程式支援檔案"],"a":"C","f":[],"io":0,"n":4,"r":"2-106"}]};
+// CONFIG 與 BUNDLE 由 assemble.py 注入。
+// 題目格式：{s 題幹, o 選項[], a 答案, f 圖片[[檔名,[寬,高]]], io 選項是否在圖中, n 選項數, r 原題號, tf 是非題(答案 "O"/"X")}
+const DATA = BUNDLE.questions;
+const BY_UNIT = BUNDLE.numbering === "unit";   // true：每單元題號從 1 起算（例如 4-105）
+const UNITS = BUNDLE.units.map(u => ({ ...u, range: BY_UNIT ? `1–${u.to - u.from}` : `${u.from + 1}–${u.to}` }));
+const FULL = CONFIG.full_exam;                  // {mode:"even", total:50} 或 {mode:"per_unit", per:10}
+const EXTRA = CONFIG.extra_modes || [];         // [{label, per_unit:[每單元題數…]}]
+const SHUF = CONFIG.shuffle_options || null;    // {default:false, pin_pattern:"^(以上|全部皆)"}
+const PIN = SHUF && SHUF.pin_pattern ? new RegExp(SHUF.pin_pattern) : null;
+const numOf = qi => BY_UNIT ? qi - UNITS[unitOf(qi)].from + 1 : qi + 1;
+const $ = id => document.getElementById(id);
+const LET = "ABCDE";
+const TF = { O: "○", X: "╳" }, TFW = { O: "對", X: "錯" };
+const letters = q => q.tf ? ["O", "X"] : LET.slice(0, q.n).split("");
+const unitOf = qi => UNITS.findIndex(u => qi >= u.from && qi < u.to);
+let paper = [], perms = [], answers = [], cur = 0, submitted = false, paperLabel = "";
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const figs = q => q.f.map(([src]) => `<img class="fig" src="img/${src}" alt="題目附圖">`).join("");
+const optInner = (q, l) => q.tf ? TFW[l] : q.io ? "" : q.o[LET.indexOf(l)];
+const optMark = (q, l) => q.tf ? TF[l] : `（${l}）`;
+const ansText = q => q.tf ? TF[q.a] : q.a;
+
+// ---- 選項隨機：「以上皆是」等選項固定在原位置，其餘位置互換 ----
+const plainOpt = h => h.replace(/<[^>]+>/g, "").trim();
+function makePerm(q) {
+  const id = q.o.map((_, i) => i);
+  if (!$("shuffleOpts").checked || q.tf || q.io || !q.o.length) return id;
+  const free = id.filter(i => !(PIN && PIN.test(plainOpt(q.o[i]))));
+  const sh = shuffle(free), p = id.slice();
+  free.forEach((pos, k) => { p[pos] = sh[k]; });
+  return p;                                   // p[顯示位置] = 原選項索引
+}
+function view(q, p) {
+  if (!p || q.tf || q.io) return q;
+  return { ...q, o: p.map(i => q.o[i]), a: LET[p.indexOf(LET.indexOf(q.a))] };
+}
+const cq = i => view(DATA[paper[i]], perms[i]);
+
+// 從多個單元平均抽題，順序依單元排列
+function drawEven(unitIdx, total) {
+  const per = unitIdx.map(() => Math.floor(total / unitIdx.length));
+  let left = total - per.reduce((s, v) => s + v, 0);
+  shuffle(unitIdx.map((_, i) => i)).slice(0, left).forEach(i => per[i]++);
+  return drawPer(unitIdx, per);
+}
+function drawPer(unitIdx, per) {
+  const out = [];
+  unitIdx.forEach((u, i) => {
+    const U = UNITS[u], ids = [];
+    for (let k = U.from; k < U.to; k++) ids.push(k);
+    shuffle(ids).slice(0, Math.min(per[i], ids.length)).sort((a, b) => a - b).forEach(qi => out.push(qi));
+  });
+  return out;
+}
+
+function renderHome() {
+  $("bankRows").innerHTML = UNITS.map(u => {
+    let f = 0; for (let k = u.from; k < u.to; k++) if (DATA[k].f.length || /<img/.test(DATA[k].s + DATA[k].o.join(""))) f++;
+    return `<tr><td>${u.name}</td><td class="num">${u.range}</td><td class="num">${u.to - u.from}</td><td class="num">${f}</td></tr>`;
+  }).join("") + `<tr class="tot"><td>合計</td><td class="num">${BY_UNIT ? "" : "1–" + DATA.length}</td><td class="num">${DATA.length}</td><td class="num">${DATA.filter(q => q.f.length || /<img/.test(q.s + q.o.join(""))).length}</td></tr>`;
+  const opts = UNITS.map((u, i) => `<option value="${i}">${u.name}（${u.range}）</option>`).join("");
+  $("chSel").innerHTML = opts; $("rgFrom").innerHTML = opts; $("rgTo").innerHTML = opts; $("lkCh").innerHTML = opts;
+  $("rgTo").value = String(UNITS.length - 1);
+  $("modeFull").textContent = FULL.mode === "per_unit"
+    ? `模擬測驗（每單元 ${FULL.per} 題，共 ${FULL.per * UNITS.length} 題）`
+    : `模擬測驗（全範圍 ${FULL.total} 題，各單元平均抽題）`;
+  EXTRA.forEach((m, i) => {
+    const o = document.createElement("option"); o.value = "x" + i;
+    o.textContent = `${m.label}（共 ${m.per_unit.reduce((s, v) => s + v, 0)} 題）`;
+    $("modeFull").after(o);
+  });
+  if (!SHUF) $("shufWrap").hidden = true;
+  else $("shuffleOpts").checked = !!SHUF.default;
+}
+
+function buildPaper() {
+  const m = $("mode").value;
+  if (m === "full") {
+    paperLabel = "ALL";
+    if (FULL.mode === "per_unit") return [].concat(...UNITS.map((_, u) => drawEven([u], FULL.per)));
+    return drawEven(UNITS.map((_, i) => i), FULL.total);
+  }
+  if (m[0] === "x") {
+    paperLabel = "ALL";
+    const per = EXTRA[+m.slice(1)].per_unit;
+    return drawPer(per.map((_, i) => i).filter(i => i < UNITS.length), per);
+  }
+  if (m === "ch") {
+    const u = +$("chSel").value, n = +$("cnt").value, U = UNITS[u], ids = [];
+    for (let k = U.from; k < U.to; k++) ids.push(k);
+    paperLabel = String(u + 1);
+    return n ? shuffle(ids).slice(0, n) : shuffle(ids);
+  }
+  let a = +$("rgFrom").value, b = +$("rgTo").value; if (a > b) [a, b] = [b, a];
+  const us = []; for (let i = a; i <= b; i++) us.push(i);
+  paperLabel = a === b ? String(a + 1) : `${a + 1}-${b + 1}`;
+  return drawEven(us, +$("rgCnt").value);
+}
+
+function start(list) {
+  paper = list; perms = list.map(qi => makePerm(DATA[qi]));
+  answers = new Array(list.length).fill(null); cur = 0; submitted = false;
+  $("home").hidden = true; $("result").hidden = true; $("quiz").hidden = false; $("confirmBox").hidden = true;
+  renderQ(); window.scrollTo(0, 0);
+}
+
+function renderQ() {
+  const qi = paper[cur], q = cq(cur), instant = $("instant").checked;
+  const reveal = submitted || (instant && answers[cur] !== null);
+  $("qPos").textContent = `第 ${cur + 1} / ${paper.length} 題`;
+  $("qCh").textContent = `${UNITS[unitOf(qi)].name} · 題號 ${numOf(qi)}`;
+  $("prog").style.width = (answers.filter(a => a !== null).length / paper.length * 100) + "%";
+  $("qText").innerHTML = q.s;
+  $("qFig").innerHTML = figs(q);
+  $("opts").className = q.tf ? "opts tf" : q.io ? "opts letters" : "opts";
+  $("opts").innerHTML = letters(q).map(l => {
+    let cls = "opt";
+    if (answers[cur] === l) cls += " sel";
+    if (reveal) { if (l === q.a) cls += " right"; else if (answers[cur] === l) cls += " wrong"; }
+    return `<button class="${cls}" data-l="${l}" ${reveal ? "disabled" : ""}><b>${optMark(q, l)}</b><span>${optInner(q, l)}</span></button>`;
+  }).join("");
+  $("prevBtn").disabled = cur === 0; $("nextBtn").disabled = cur === paper.length - 1;
+  $("grid").innerHTML = paper.map((qj, i) => {
+    let c = "cell"; const qq = cq(i);
+    if (submitted || (instant && answers[i] !== null)) c += answers[i] === qq.a ? " r" : (answers[i] !== null ? " w" : "");
+    else if (answers[i] !== null) c += " done";
+    if (i === cur) c += " cur";
+    return `<button class="${c}" data-i="${i}" title="${UNITS[unitOf(qj)].name}">${i + 1}</button>`;
+  }).join("");
+}
+
+$("opts").addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b || b.disabled) return;
+  answers[cur] = b.dataset.l; renderQ();
+  if (!$("instant").checked && cur < paper.length - 1) setTimeout(() => { cur++; renderQ(); }, 180);
+});
+$("grid").addEventListener("click", e => { const b = e.target.closest(".cell"); if (!b) return; cur = +b.dataset.i; renderQ(); });
+$("prevBtn").onclick = () => { if (cur > 0) { cur--; renderQ(); } };
+$("nextBtn").onclick = () => { if (cur < paper.length - 1) { cur++; renderQ(); } };
+document.addEventListener("keydown", e => {
+  if ($("quiz").hidden || /SELECT|INPUT/.test(e.target.tagName)) return;
+  let k = e.key.toUpperCase();
+  if (DATA[paper[cur]].tf) k = ({ O: "O", X: "X", A: "O", B: "X", "1": "O", "2": "X" })[k] || "";
+  if (k && "ABCDEOX".includes(k)) { const b = document.querySelector(`#opts .opt[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
+  else if (e.key === "ArrowRight") $("nextBtn").click();
+  else if (e.key === "ArrowLeft") $("prevBtn").click();
+});
+$("submitBtn").onclick = () => {
+  const left = answers.filter(a => a === null).length;
+  if (left) { $("confirmMsg").textContent = `還有 ${left} 題未作答，未作答視為答錯。`; $("confirmBox").hidden = false; }
+  else finish();
+};
+$("confirmNo").onclick = () => { $("confirmBox").hidden = true; };
+$("confirmYes").onclick = finish;
+
+function finish() {
+  submitted = true; $("quiz").hidden = true; $("result").hidden = false; window.scrollTo(0, 0);
+  let right = 0; const per = {}; const wrong = [];
+  paper.forEach((qi, i) => {
+    const q = cq(i), u = unitOf(qi); per[u] = per[u] || { r: 0, n: 0 }; per[u].n++;
+    if (answers[i] === q.a) { right++; per[u].r++; } else wrong.push({ qi, i, q });
+  });
+  $("score").textContent = Math.round(right / paper.length * 100);
+  $("scoreSub").textContent = `分 · 答對 ${right} / ${paper.length} 題`;
+  $("chRows").innerHTML = Object.keys(per).sort((a, b) => a - b).map(u => { const s = per[u]; return `<tr><td>${UNITS[u].name}</td><td class="num">${s.r}</td><td class="num">${s.n}</td><td class="num">${Math.round(s.r / s.n * 100)}%</td></tr>`; }).join("");
+  $("retryWrong").disabled = !wrong.length;
+  $("retryWrong").onclick = () => start(shuffle(wrong.map(w => w.qi)));
+  const optTxt = (q, l) => q.tf ? `${TF[l]}（${TFW[l]}）` : `（${l}）${optInner(q, l)}`;
+  $("review").innerHTML = wrong.length ? wrong.map(w => {
+    const a = answers[w.i];
+    const opts = (w.q.tf || w.q.io) ? "" : `<div class="muted small">${letters(w.q).map(l => `（${l}）${optInner(w.q, l)}`).join("　")}</div>`;
+    return `<div class="ritem"><span class="tag">第 ${w.i + 1} 題 · ${UNITS[unitOf(w.qi)].name} · 題號 ${numOf(w.qi)}</span><div class="qtext sm">${w.q.s}</div>${figs(w.q)}${opts}
+      <div class="ans">你的答案：<span class="y">${a ? optTxt(w.q, a) : "未作答"}</span><br>正確答案：<span class="c">${optTxt(w.q, w.q.a)}</span></div></div>`;
+  }).join("") : `<p class="muted">全部答對。</p>`;
+}
+
+function syncMode() {
+  const m = $("mode").value;
+  $("chSel").hidden = $("cnt").hidden = m !== "ch";
+  $("rgBox").hidden = m !== "range";
+}
+$("mode").onchange = syncMode;
+$("startBtn").onclick = () => start(buildPaper());
+$("again").onclick = () => start(buildPaper());
+$("homeBtn").onclick = () => { $("result").hidden = true; $("home").hidden = false; };
+
+// ---- 查看單題（依題號，原始選項順序）----
+function renderLookup() {
+  // 題號：全卷連續編號時是 1～總題數；每單元各自編號時是該單元的 1～題數
+  let u0 = +$("lkCh").value || 0;
+  const lo = 1, hi = BY_UNIT ? UNITS[u0].to - UNITS[u0].from : DATA.length;
+  let n = Math.round(+$("lkNo").value) || 1; n = Math.min(Math.max(n, lo), hi); $("lkNo").value = n;
+  const qi = BY_UNIT ? UNITS[u0].from + n - 1 : n - 1;
+  const q = DATA[qi], show = $("lkAns").checked, u = unitOf(qi);
+  $("lkCh").value = String(u);
+  $("lkMax").textContent = `（共 ${hi} 題）`;
+  $("lkTag").textContent = `${UNITS[u].name} · 題號 ${numOf(qi)}` + (show ? ` · 答案（${ansText(q)}）` : "");
+  $("lkText").innerHTML = q.s; $("lkFig").innerHTML = figs(q);
+  $("lkOpts").className = q.tf ? "opts tf" : q.io ? "opts letters" : "opts";
+  $("lkOpts").innerHTML = letters(q).map(l => `<div class="opt${show && l === q.a ? " right" : ""}"><b>${optMark(q, l)}</b><span>${optInner(q, l)}</span></div>`).join("");
+  $("lkPrev").disabled = n === 1; $("lkNext").disabled = n === hi;
+}
+$("lkCh").onchange = () => { $("lkNo").value = BY_UNIT ? 1 : UNITS[+$("lkCh").value].from + 1; renderLookup(); };
+$("lkNo").oninput = renderLookup;
+$("lkAns").onchange = renderLookup;
+$("lkPrev").onclick = () => { $("lkNo").value = +$("lkNo").value - 1; renderLookup(); };
+$("lkNext").onclick = () => { $("lkNo").value = +$("lkNo").value + 1; renderLookup(); };
+
+// ---- 印製考卷 ----
+let fontCache = null;
+async function loadFont() {
+  if (fontCache) return fontCache;
+  const [b, j] = await Promise.all([
+    fetch("font/tc.ttf").then(r => { if (!r.ok) throw new Error("font"); return r.arrayBuffer(); }),
+    fetch("font/tc.json").then(r => r.json())]);
+  return fontCache = { bytes: new Uint8Array(b), font: j };
+}
+const jpegCache = {};
+function imgToJpeg(src) {
+  if (jpegCache[src]) return jpegCache[src];
+  return jpegCache[src] = new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight;
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0);
+      c.toBlob(async b => { if (!b) return rej(new Error("img")); res(new Uint8Array(await b.arrayBuffer())); }, "image/jpeg", 0.92);
+    };
+    im.onerror = () => rej(new Error("img")); im.src = src;
+  });
+}
+function setMsg(t, cls) { const m = $("printMsg"); m.textContent = t; m.className = "muted small" + (cls ? " " + cls : ""); }
+const MIME = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
+async function saveFile(filename, bytes, fmt = "pdf") {
+  const blob = bytes instanceof Blob ? bytes : new Blob([bytes], { type: MIME[fmt] });
+  const dl = window.claude?.use ? await window.claude.use("downloads") : null;
+  if (dl) { await dl.save({ filename, data: blob }); return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+// Word 產生器只在第一次選 Word 時載入
+const DOCX_SRC = ["https://cdn.jsdelivr.net/npm/docx@9.15.3/dist/index.iife.min.js", "exam-docx.js"];
+let docxReady = null;
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.charset = "utf-8"; s.onload = res; s.onerror = () => rej(new Error("load " + src)); document.head.appendChild(s); });
+}
+function loadDocx() {
+  return docxReady = docxReady || (async () => { for (const src of DOCX_SRC) await loadScript(src); if (!window.docx || !window.ExamDOCX) throw new Error("docx"); })()
+    .catch(e => { docxReady = null; throw e; });
+}
+$("printBtn").onclick = async () => {
+  const btn = $("printBtn"); if (btn.disabled) return;
+  const fmt = $("fmtSel").value;
+  if (!window.ExamPDF || (fmt === "pdf" && !window.PDFLib)) { setMsg("PDF 元件載入失敗，請重新整理頁面後再試。", "err"); return; }
+  btn.disabled = true; setMsg(fmt === "docx" ? "正在產生 Word 考卷…" : "正在產生考卷…");
+  try {
+    if (fmt === "docx") {
+      try { await loadDocx(); } catch (e) { setMsg("Word 元件載入失敗，請確認網路連線後再試。", "err"); return; }
+    }
+    const list = buildPaper();
+    const items = [];
+    for (const qi of list) {
+      const q = view(DATA[qi], makePerm(DATA[qi]));
+      const imgs = [];
+      for (const [f, wh] of q.f) imgs.push({ bytes: await imgToJpeg("img/" + f), w: wh[0], h: wh[1] });
+      const inl = {};
+      for (const m of (q.s + q.o.join("")).matchAll(/<img class="ico" src="([^"]+)" alt="" data-w="([\d.]+)" data-h="([\d.]+)"[^>]*>/g))
+        inl[m[1]] = { bytes: await imgToJpeg(m[1]), w: +m[2], h: +m[3] };
+      items.push({ stem: q.s, opts: q.o, ans: ansText(q), imgs, inl, imgOpts: !!(q.io || q.tf), ref: q.r || String(qi + 1) });
+    }
+    const opt = { items, chLabel: paperLabel, paper: $("paperSel").value, title: CONFIG.exam_name };
+    let out;
+    if (fmt === "docx") out = await ExamDOCX.build({ ...opt, docx: window.docx, toRuns: ExamPDF.toRuns });
+    else { const { bytes: fontBytes, font } = await loadFont(); out = await ExamPDF.build({ ...opt, PDFLib, fontBytes, font }); }
+    const d = new Date(), z = n => String(n).padStart(2, "0");
+    const filename = `${CONFIG.exam_name}_Ch${paperLabel}_${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.${fmt}`;
+    try { await saveFile(filename, out, fmt); setMsg(`已輸出 ${filename}（${items.length} 題＋答案頁）。`, "ok"); }
+    catch (e) { setMsg(e && e.code === "declined" ? "已取消下載。" : "下載失敗，請稍後再試。", e && e.code === "declined" ? "" : "err"); }
+  } catch (e) { console.error(e); setMsg("產生考卷時發生錯誤，請重新整理頁面後再試。", "err"); }
+  finally { btn.disabled = false; }
+};
+
+// 點圖片放大（手機上看小圖）
+document.addEventListener("click", e => {
+  const im = e.target.closest(".fig, .ico");
+  if (im && !e.target.closest(".opt:not(.lookup .opt)")) { $("zoomImg").src = im.src; $("zoom").hidden = false; e.preventDefault(); return; }
+  if (e.target.closest("#zoom")) $("zoom").hidden = true;
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("zoom").hidden = true; });
+
+renderHome(); syncMode(); renderLookup();
+</script>
+</body>
+</html>
